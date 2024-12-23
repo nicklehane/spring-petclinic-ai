@@ -18,9 +18,11 @@ package org.springframework.samples.petclinic.owner;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.samples.petclinic.chat.ChatService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -44,15 +46,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * @author Wick Dynex
  */
 @Controller
+@AllArgsConstructor
 class OwnerController {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
 	private final OwnerRepository owners;
-
-	public OwnerController(OwnerRepository owners) {
-		this.owners = owners;
-	}
+	private final ChatService chatService;
 
 	@InitBinder
 	public void setAllowedFields(WebDataBinder dataBinder) {
@@ -60,11 +60,17 @@ class OwnerController {
 	}
 
 	@ModelAttribute("owner")
-	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
-		return ownerId == null ? new Owner()
+	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId, Model model) {
+
+		var owner = ownerId == null ? new Owner()
 				: this.owners.findById(ownerId)
 					.orElseThrow(() -> new IllegalArgumentException("Owner not found with id: " + ownerId
 							+ ". Please ensure the ID is correct " + "and the owner exists in the database."));
+
+		if (ownerId != null) {
+			model.addAttribute("individualOwnerSummary", chatService.getIndividualOwnerSummary(ownerId));
+		}
+		return owner;
 	}
 
 	@GetMapping("/owners/new")
@@ -112,6 +118,7 @@ class OwnerController {
 		}
 
 		// multiple owners found
+		model.addAttribute("ownerSummary", chatService.getOwnerSummary());
 		return addPaginationModel(page, model, ownersResults);
 	}
 

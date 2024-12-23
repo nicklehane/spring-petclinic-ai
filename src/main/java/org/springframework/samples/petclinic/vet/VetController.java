@@ -17,12 +17,17 @@ package org.springframework.samples.petclinic.vet;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.samples.petclinic.chat.Assistant;
+import org.springframework.samples.petclinic.chat.ChatService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -33,13 +38,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * @author Arjen Poutsma
  */
 @Controller
+@AllArgsConstructor
 class VetController {
 
+	private final ChatService chatService;
 	private final VetRepository vetRepository;
 
-	public VetController(VetRepository vetRepository) {
-		this.vetRepository = vetRepository;
-	}
 
 	@GetMapping("/vets.html")
 	public String showVetList(@RequestParam(defaultValue = "1") int page, Model model) {
@@ -57,6 +61,7 @@ class VetController {
 		model.addAttribute("totalPages", paginated.getTotalPages());
 		model.addAttribute("totalItems", paginated.getTotalElements());
 		model.addAttribute("listVets", listVets);
+		model.addAttribute("vetSummary", chatService.getVetSummary());
 		return "vets/vetList";
 	}
 
@@ -73,6 +78,11 @@ class VetController {
 		Vets vets = new Vets();
 		vets.getVetList().addAll(this.vetRepository.findAll());
 		return vets;
+	}
+
+	@GetMapping({ "/vets/summary"})
+	public @ResponseBody String getVetSummary(Model model) {
+		return chatService.getVetSummary();
 	}
 
 }
